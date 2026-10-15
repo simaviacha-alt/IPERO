@@ -1,18 +1,124 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Capacitación IPERO SST - Plataforma Oficial</title>
-    <meta name="description" content="Plataforma de capacitación en Identificación de Peligros, Evaluación, Control de Riesgos Ocupacionales y Oportunidades SST (IPERO)." />
-    <meta property="og:title" content="Capacitación IPERO SST - Plataforma Oficial" />
-    <meta property="og:description" content="Plataforma de capacitación en Identificación de Peligros, Evaluación, Control de Riesgos Ocupacionales y Oportunidades SST (IPERO)." />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil Oficial de Capacitación SST</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #0d1117; color: #c9d1d9; padding: 20px; }
+        .form-container { max-width: 500px; margin: auto; background: #161b22; padding: 20px; border-radius: 8px; border: 1px solid #30363d; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input { width: 100%; padding: 10px; background: #0d1117; border: 1px solid #30363d; color: #fff; border-radius: 4px; box-sizing: border-box; }
+        input:focus { text-transform: uppercase; }
+        button { background: #238636; color: white; border: none; padding: 10px 15px; width: 100%; border-radius: 4px; font-size: 16px; cursor: pointer; }
+        button:hover { background: #2ea043; }
+        #mensajeEstado { margin-top: 15px; text-align: center; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="form-container">
+    <h2>Registro de Capacitación SST</h2>
+    <p style="font-size: 13px; color: #8b949e;">Completa tus datos para crear tu perfil oficial de capacitación SST (todos los campos se registrarán en mayúsculas):</p>
+    
+    <form id="formSST">
+        <div class="form-group">
+            <label for="ci">Número de Carnet (CI) - Llave de reingreso:</label>
+            <input type="text" id="ci" name="ci" required oninput="this.value = this.value.toUpperCase()">
+        </div>
+        
+        <div class="form-group">
+            <label for="nombreCompleto">Nombre Completo:</label>
+            <input type="text" id="nombreCompleto" name="nombreCompleto" required oninput="this.value = this.value.toUpperCase()">
+        </div>
+
+        <div class="form-group">
+            <label for="empresa">Empresa / Contratista:</label>
+            <input type="text" id="empresa" name="empresa" required oninput="this.value = this.value.toUpperCase()">
+        </div>
+
+        <div class="form-group">
+            <label for="cargo">Cargo o Puesto:</label>
+            <input type="text" id="cargo" name="cargo" required oninput="this.value = this.value.toUpperCase()">
+        </div>
+
+        <button type="submit" id="btnEnviar">Registrar Perfil</button>
+    </form>
+    
+    <div id="mensajeEstado"></div>
+</div>
+
+<script>
+    // PEGA AQUÍ LA URL DE TU APLICACIÓN WEB DE GOOGLE APPS SCRIPT
+    const URL_APPS_SCRIPT = https://script.google.com/macros/s/AKfycbyaiIqA9BOSdNWQCfhNNiL4lplproRHa4KHdDtXP5BDMqqyX281AMole_aGEDVpf3__SQ/exec;
+
+    const form = document.getElementById('formSST');
+    const mensajeEstado = document.getElementById('mensajeEstado');
+    const btnEnviar = document.getElementById('btnEnviar');
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault(); // Evita que la página se recargue
+
+        // Deshabilitar botón para evitar múltiples envíos
+        btnEnviar.disabled = true;
+        btnEnviar.textContent = "Enviando...";
+        mensajeEstado.textContent = "";
+        mensajeEstado.style.color = "#c9d1d9";
+
+        // Recolectar datos del formulario
+        const datosFormulario = {
+            ci: document.getElementById('ci').value.trim(),
+            nombreCompleto: document.getElementById('nombreCompleto').value.trim(),
+            empresa: document.getElementById('empresa').value.trim(),
+            cargo: document.getElementById('cargo').value.trim()
+        };
+
+        try {
+            // Petición POST a Google Apps Script
+            const response = await fetch(URL_APPS_SCRIPT, {
+                method: "POST",
+                // Nota: Usar text/plain o no definir Content-Type estricto evita bloqueos CORS preliminares de Google Apps Script
+                body: JSON.stringify(datosFormulario)
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+
+            // Leer la respuesta como texto primero para blindarnos ante errores HTML de Google
+            const textoRespuesta = await response.text();
+            let resultado;
+
+            try {
+                resultado = JSON.parse(textoRespuesta);
+            } catch (err) {
+                console.error("Respuesta cruda del servidor:", textoRespuesta);
+                throw new Error("El servidor devolvió un formato no válido (posible error de permisos o URL incorrecta).");
+            }
+
+            // Evaluar la respuesta del script
+            if (resultado.status === "success") {
+                mensajeEstado.style.color = "#3fb950"; // Verde éxito
+                mensajeEstado.textContent = "¡Éxito! " + resultado.message;
+                form.reset(); // Limpiar formulario
+            } else {
+                mensajeEstado.style.color = "#f85149"; // Rojo error
+                mensajeEstado.textContent = "Error: " + resultado.message;
+            }
+
+        } catch (error) {
+            console.error("Error en la conexión:", error);
+            mensajeEstado.style.color = "#f85149";
+            mensajeEstado.textContent = "No se pudo conectar con el servidor. Revisa la consola.";
+        } finally {
+            // Rehabilitar botón
+            btnEnviar.disabled = false;
+            btnEnviar.textContent = "Registrar Perfil";
+        }
+    });
+</script>
+
+</body>
 </html>
 
